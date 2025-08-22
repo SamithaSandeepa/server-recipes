@@ -39,13 +39,21 @@ const allowedOrigins =
 // Dynamic origin check so curl/Postman (no Origin) still work
 const corsOptions = {
   origin(origin, cb) {
-    if (!origin) return cb(null, true); // non-browser clients
-    if (allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin) return cb(null, true); // curl/Postman
+    const host = parseHost(origin);
+
+    const isExplicitlyAllowed = allowedOrigins.some(
+      (o) => parseHost(o) === host
+    );
+    const isVercelPreview = /\.vercel\.app$/.test(host);
+
+    if (isExplicitlyAllowed || isVercelPreview) return cb(null, true);
     return cb(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
